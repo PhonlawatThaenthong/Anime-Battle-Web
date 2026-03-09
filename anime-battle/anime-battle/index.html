@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>アニメバトル — Anime Battle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loader-ring"></div>
+  <p>LOADING ANIME...</p>
+</div>
+
+<div id="app">
+
+<header>
+  <h1>ANIME BATTLE</h1>
+  <p>เลือกอนิเมะที่คุณชอบมากกว่า</p>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;">
+    <div id="round-counter">ROUND 1</div>
+    <span style="opacity:.35;font-size:.75rem;">·</span>
+    <div id="remaining-counter">เหลือ 30 เรื่อง</div>
+    <button id="dashboard-btn" onclick="openDashboard()" title="ประวัติการชนะ">🏆</button>
+    <button id="settings-btn"  onclick="openSettings()"  title="ตั้งค่า">⚙️</button>
+  </div>
+</header>
+
+<div id="arena">
+  <!-- LEFT PANEL -->
+  <div class="panel" id="left">
+    <div class="panel-bg" id="left-bg"></div>
+    <div class="trailer-wrap" id="left-trailer"></div>
+    <div class="overlay"></div>
+    <div class="vignette"></div>
+    <div class="side-label">LEFT</div>
+    <div class="trailer-loading" id="left-trailer-loading"></div>
+    <div class="trailer-badge"   id="left-trailer-badge">▶ TRAILER</div>
+    <div class="no-trailer-msg"  id="left-no-trailer"></div>
+    <div class="anime-info">
+      <div class="anime-genre" id="left-genre"></div>
+      <div class="anime-title" id="left-title"></div>
+      <div class="anime-title-jp" id="left-title-jp"></div>
+      <button class="choose-btn" onclick="choose('left')">▶ เลือกฝั่งนี้</button>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="vs">
+    <div class="vs-line"></div>
+    <div id="vs-text">VS</div>
+    <div id="last-pick">
+      <div id="last-pick-label">LAST PICK</div>
+      <img id="last-pick-img" src="" alt="last pick"/>
+      <div id="last-pick-name"></div>
+    </div>
+    <div class="vs-line"></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel" id="right">
+    <div class="panel-bg" id="right-bg"></div>
+    <div class="trailer-wrap" id="right-trailer"></div>
+    <div class="overlay"></div>
+    <div class="vignette"></div>
+    <div class="side-label">RIGHT</div>
+    <div class="trailer-loading" id="right-trailer-loading"></div>
+    <div class="trailer-badge"   id="right-trailer-badge">▶ TRAILER</div>
+    <div class="no-trailer-msg"  id="right-no-trailer"></div>
+    <div class="anime-info">
+      <div class="anime-genre" id="right-genre"></div>
+      <div class="anime-title" id="right-title"></div>
+      <div class="anime-title-jp" id="right-title-jp"></div>
+      <button class="choose-btn" onclick="choose('right')">▶ เลือกฝั่งนี้</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /#app -->
+
+<!-- WINNER SCREEN -->
+<div id="winner-screen">
+  <div class="winner-crown">👑</div>
+  <div class="winner-label">ULTIMATE WINNER</div>
+  <img class="winner-img" id="winner-img" src="" alt="winner"/>
+  <div class="winner-title" id="winner-title"></div>
+  <div class="winner-jp"    id="winner-jp"></div>
+  <div class="winner-genre" id="winner-genre"></div>
+  <div class="winner-round" id="winner-round"></div>
+  <button class="play-again-btn" onclick="playAgain()">▶ เล่นใหม่อีกครั้ง</button>
+</div>
+
+<div id="toast"></div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-page" class="modal-backdrop">
+  <div class="settings-card">
+    <div class="modal-header">
+      <h2>⚙️ ตั้งค่า</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-body">
+
+      <!-- POOL SIZE (everyone) -->
+      <div class="settings-field">
+        <label>🎲 จำนวน Anime ต่อรอบ</label>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+          <input type="range" id="pool-size-slider" min="4" max="120" step="2" value="30"
+            style="flex:1;accent-color:var(--gold);"
+            oninput="document.getElementById('pool-size-val').textContent=this.value"/>
+          <span id="pool-size-val" style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--gold);min-width:28px;text-align:right;">30</span>
+          <span style="font-size:.65rem;opacity:.35;">เรื่อง</span>
+        </div>
+        <div class="settings-hint">เลือกจาก anime pool แบบสุ่มทุกครั้งที่เริ่มเกมใหม่</div>
+      </div>
+        <label>🔊 ระดับเสียง Trailer</label>
+        <div class="volume-row">
+          <span class="volume-icon" id="vol-icon">🔊</span>
+          <input type="range" class="vol-slider" id="vol-slider"
+                 min="0" max="100" value="80"
+                 oninput="onVolumeSlide(this.value)"
+                 onchange="saveVolume(this.value)"/>
+          <span class="vol-value" id="vol-value">80</span>
+        </div>
+      </div>
+
+      <!-- ADMIN-ONLY SECTION with password gate -->
+      <div id="admin-settings-section" style="border-top:1px solid rgba(255,255,255,.07);padding-top:14px;">
+
+        <!-- LOCKED STATE -->
+        <div id="admin-gate-locked" class="admin-gate">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.1rem;">🔒</span>
+            <span style="font-size:.72rem;opacity:.5;letter-spacing:.1em;">ต้องใส่รหัสเพื่อเข้าถึง API Keys</span>
+          </div>
+          <div class="admin-gate-row">
+            <input type="password" id="admin-pw-input" placeholder="รหัสผ่าน Admin"
+              onkeydown="if(event.key==='Enter') checkAdminPw()"/>
+            <button class="admin-gate-btn" onclick="checkAdminPw()">🔓 ปลดล็อก</button>
+          </div>
+          <div class="admin-gate-err" id="admin-pw-err">รหัสผ่านไม่ถูกต้อง</div>
+        </div>
+
+        <!-- UNLOCKED STATE -->
+        <div id="admin-gate-unlocked" style="display:none;display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:.65rem;letter-spacing:.14em;background:rgba(255,215,0,.15);color:var(--gold);border:1px solid rgba(255,215,0,.25);padding:2px 8px;border-radius:10px;">🔓 ADMIN</span>
+              <div class="key-dot" id="key-dot"></div>
+              <span id="key-indicator-text" style="opacity:.4;font-size:.68rem;">ยังไม่ได้ตั้งค่า API Key</span>
+            </div>
+            <button onclick="lockAdminSettings()" style="background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);border-radius:6px;padding:3px 10px;font-size:.65rem;cursor:pointer;">🔒 ล็อก</button>
+          </div>
+
+          <div class="settings-field">
+            <label>YouTube Data API v3 Key</label>
+            <div class="input-row">
+              <input type="password" id="settings-key-input" placeholder="AIza..." spellcheck="false"/>
+              <button class="toggle-vis" onclick="toggleKeyVis()">👁 แสดง</button>
+            </div>
+            <div class="settings-hint">
+              <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> → เปิดใช้งาน YouTube Data API v3
+            </div>
+          </div>
+          <div class="settings-status" id="settings-status"></div>
+          <button class="settings-save-btn" onclick="saveApiKey()">💾 บันทึก</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD MODAL -->
+<div id="dashboard-page" class="modal-backdrop">
+  <div class="dash-card">
+    <div class="modal-header">
+      <h2>🏆 DASHBOARD</h2>
+      <div class="dash-header-right">
+        <button class="dash-clear-btn" onclick="clearHistory()">🗑 ล้างประวัติ</button>
+        <button class="modal-close" onclick="closeDashboard()">✕</button>
+      </div>
+    </div>
+    <div class="dash-stats-row">
+      <div class="dash-stat"><div class="dash-stat-val" id="stat-total-games">0</div><div class="dash-stat-label">เกมทั้งหมด</div></div>
+      <div class="dash-stat"><div class="dash-stat-val" id="stat-total-rounds">0</div><div class="dash-stat-label">รอบรวม</div></div>
+      <div class="dash-stat"><div class="dash-stat-val" id="stat-unique-winners">0</div><div class="dash-stat-label">Anime ที่เคยชนะ</div></div>
+      <div class="dash-stat"><div class="dash-stat-val" id="stat-top-anime">—</div><div class="dash-stat-label">แชมป์ตลอดกาล</div></div>
+    </div>
+    <div class="dash-tabs">
+      <button class="dash-tab active" id="tab-wins"     onclick="switchTab('wins')">🏅 ชนะมากสุด</button>
+      <button class="dash-tab"        id="tab-recent"   onclick="switchTab('recent')">🕐 ล่าสุด</button>
+      <button class="dash-tab"        id="tab-champion" onclick="switchTab('champion')">👑 แชมป์</button>
+    </div>
+    <div class="dash-body"><div id="dash-content"></div></div>
+  </div>
+</div>
+
+<script>
+// ── ANIME DATABASE ──────────────────────────────────────────────
+const ANIME = [
+  // TOP TIER
+  { title:"Attack on Titan",          jp:"進撃の巨人",               genre:"ACTION · DARK FANTASY"      },
+  { title:"Death Note",               jp:"デスノート",               genre:"THRILLER · MYSTERY"         },
+  { title:"Fullmetal Alchemist: Brotherhood", jp:"鋼の錬金術師",     genre:"ADVENTURE · FANTASY"        },
+  { title:"Demon Slayer",             jp:"鬼滅の刃",                 genre:"ACTION · SUPERNATURAL"      },
+  { title:"Jujutsu Kaisen",           jp:"呪術廻戦",                 genre:"ACTION · SUPERNATURAL"      },
+  { title:"One Piece",                jp:"ワンピース",               genre:"ADVENTURE · FANTASY"        },
+  { title:"Naruto",                   jp:"ナルト",                   genre:"ACTION · ADVENTURE"         },
+  { title:"Dragon Ball Z",            jp:"ドラゴンボールZ",          genre:"ACTION · MARTIAL ARTS"      },
+  { title:"Sword Art Online",         jp:"ソードアート・オンライン", genre:"ACTION · ISEKAI"            },
+  { title:"My Hero Academia",         jp:"僕のヒーローアカデミア",   genre:"ACTION · SUPERHERO"         },
+  { title:"Hunter x Hunter",          jp:"ハンター×ハンター",        genre:"ACTION · ADVENTURE"         },
+  { title:"Bleach",                   jp:"ブリーチ",                 genre:"ACTION · SUPERNATURAL"      },
+  { title:"Steins;Gate",              jp:"シュタインズ・ゲート",     genre:"SCI-FI · THRILLER"          },
+  { title:"Code Geass",               jp:"コードギアス",             genre:"MECHA · DRAMA"              },
+  { title:"Cowboy Bebop",             jp:"カウボーイビバップ",       genre:"SCI-FI · NOIR"              },
+  { title:"Neon Genesis Evangelion",  jp:"新世紀エヴァンゲリオン",   genre:"MECHA · PSYCHOLOGICAL"      },
+  { title:"Violet Evergarden",        jp:"ヴァイオレット・エヴァーガーデン", genre:"DRAMA · SLICE OF LIFE" },
+  { title:"Your Lie in April",        jp:"四月は君の嘘",             genre:"DRAMA · ROMANCE"            },
+  { title:"Re:Zero",                  jp:"Re:ゼロから始める異世界生活", genre:"FANTASY · DRAMA"          },
+  { title:"Black Clover",             jp:"ブラッククローバー",       genre:"ACTION · FANTASY"           },
+  { title:"Vinland Saga",             jp:"ヴィンランド・サガ",       genre:"ACTION · HISTORICAL"        },
+  { title:"Spy x Family",             jp:"SPY×FAMILY",               genre:"COMEDY · ACTION"            },
+  { title:"Chainsaw Man",             jp:"チェンソーマン",           genre:"ACTION · DARK FANTASY"      },
+  { title:"Mob Psycho 100",           jp:"モブサイコ100",            genre:"ACTION · SUPERNATURAL"      },
+  { title:"One Punch Man",            jp:"ワンパンマン",             genre:"ACTION · COMEDY"            },
+  { title:"Haikyuu!!",                jp:"ハイキュー!!",             genre:"SPORTS · DRAMA"             },
+  { title:"Tokyo Ghoul",              jp:"東京喰種",                 genre:"ACTION · HORROR"            },
+  { title:"Overlord",                 jp:"オーバーロード",           genre:"FANTASY · ISEKAI"           },
+  { title:"No Game No Life",          jp:"ノーゲーム・ノーライフ",   genre:"FANTASY · COMEDY"           },
+  { title:"Kaiju No. 8",              jp:"怪獣8号",                  genre:"ACTION · SUPERNATURAL"      },
+  // CLASSIC
+  { title:"Dragon Ball",              jp:"ドラゴンボール",           genre:"ACTION · ADVENTURE"         },
+  { title:"Sailor Moon",              jp:"美少女戦士セーラームーン", genre:"MAGICAL GIRL · ROMANCE"     },
+  { title:"Ghost in the Shell",       jp:"攻殻機動隊",               genre:"SCI-FI · CYBERPUNK"         },
+  { title:"Yu Yu Hakusho",            jp:"幽☆遊☆白書",              genre:"ACTION · SUPERNATURAL"      },
+  { title:"Inuyasha",                 jp:"犬夜叉",                   genre:"ACTION · ROMANCE"           },
+  { title:"Rurouni Kenshin",          jp:"るろうに剣心",             genre:"ACTION · HISTORICAL"        },
+  { title:"Trigun",                   jp:"トライガン",               genre:"SCI-FI · WESTERN"           },
+  { title:"Berserk",                  jp:"ベルセルク",               genre:"DARK FANTASY · ACTION"      },
+  { title:"Samurai Champloo",         jp:"サムライチャンプルー",     genre:"ACTION · HISTORICAL"        },
+  { title:"Elfen Lied",               jp:"エルフェンリート",         genre:"DARK FANTASY · DRAMA"       },
+  { title:"Eureka Seven",             jp:"交響詩篇エウレカセブン",   genre:"MECHA · ROMANCE"            },
+  { title:"Outlaw Star",              jp:"星方武侠アウトロースター", genre:"SCI-FI · ADVENTURE"         },
+  { title:"Wolf Rain",                jp:"ウルフズ・レイン",         genre:"SCI-FI · DRAMA"             },
+  { title:"Trigun Stampede",          jp:"トライガンスタンピード",   genre:"SCI-FI · ACTION"            },
+  // ISEKAI
+  { title:"That Time I Got Reincarnated as a Slime", jp:"転生したらスライムだった件", genre:"FANTASY · ISEKAI" },
+  { title:"Konosuba",                 jp:"この素晴らしい世界に祝福を！", genre:"FANTASY · COMEDY"       },
+  { title:"The Rising of the Shield Hero", jp:"盾の勇者の成り上がり", genre:"FANTASY · ISEKAI"         },
+  { title:"Mushoku Tensei",           jp:"無職転生",                 genre:"FANTASY · ISEKAI"           },
+  { title:"Log Horizon",              jp:"ログ・ホライズン",         genre:"FANTASY · ISEKAI"           },
+  { title:"Tanya the Evil",           jp:"幼女戦記",                 genre:"FANTASY · MILITARY"         },
+  { title:"Cautious Hero",            jp:"この勇者が俺TUEEEくせに慎重すぎる", genre:"FANTASY · COMEDY" },
+  { title:"Arifureta",                jp:"ありふれた職業で世界最強", genre:"FANTASY · ISEKAI"           },
+  { title:"The Misfit of Demon King Academy", jp:"魔王学院の不適合者", genre:"FANTASY · ACTION"        },
+  { title:"In Another World With My Smartphone", jp:"異世界はスマートフォンとともに。", genre:"FANTASY · ISEKAI" },
+  // ROMANCE & SOL
+  { title:"Toradora",                 jp:"とらドラ！",               genre:"ROMANCE · COMEDY"           },
+  { title:"Clannad After Story",      jp:"CLANNAD AFTER STORY",      genre:"DRAMA · ROMANCE"            },
+  { title:"Anohana",                  jp:"あの日見た花の名前を僕達はまだ知らない。", genre:"DRAMA · SUPERNATURAL" },
+  { title:"A Silent Voice",           jp:"聲の形",                   genre:"DRAMA · ROMANCE"            },
+  { title:"Fruits Basket",            jp:"フルーツバスケット",       genre:"ROMANCE · DRAMA"            },
+  { title:"Kaguya-sama Love is War",  jp:"かぐや様は告らせたい",     genre:"ROMANCE · COMEDY"           },
+  { title:"Horimiya",                 jp:"ホリミヤ",                 genre:"ROMANCE · SLICE OF LIFE"    },
+  { title:"Oregairu",                 jp:"やはり俺の青春ラブコメはまちがっている。", genre:"ROMANCE · DRAMA" },
+  { title:"Nisekoi",                  jp:"ニセコイ",                 genre:"ROMANCE · COMEDY"           },
+  { title:"Ouran High School Host Club", jp:"桜蘭高校ホスト部",     genre:"ROMANCE · COMEDY"           },
+  { title:"Rent-a-Girlfriend",        jp:"彼女、お借りします",       genre:"ROMANCE · COMEDY"           },
+  { title:"Quintessential Quintuplets", jp:"五等分の花嫁",           genre:"ROMANCE · COMEDY"           },
+  // SPORTS
+  { title:"Kuroko Basketball",        jp:"黒子のバスケ",             genre:"SPORTS · ACTION"            },
+  { title:"Slam Dunk",                jp:"スラムダンク",             genre:"SPORTS · DRAMA"             },
+  { title:"Captain Tsubasa",          jp:"キャプテン翼",             genre:"SPORTS · ACTION"            },
+  { title:"Ace of Diamond",           jp:"ダイヤのA",                genre:"SPORTS · DRAMA"             },
+  { title:"Yowamushi Pedal",          jp:"弱虫ペダル",               genre:"SPORTS · DRAMA"             },
+  { title:"Blue Lock",                jp:"ブルーロック",             genre:"SPORTS · ACTION"            },
+  { title:"Sk8 the Infinity",         jp:"SK∞ エスケーエイト",       genre:"SPORTS · ACTION"            },
+  { title:"Free",                     jp:"Free!",                    genre:"SPORTS · SLICE OF LIFE"     },
+  // SCI-FI & MECHA
+  { title:"Gurren Lagann",            jp:"天元突破グレンラガン",     genre:"MECHA · ACTION"             },
+  { title:"Darling in the FranXX",    jp:"ダーリン・イン・ザ・フランキス", genre:"MECHA · ROMANCE"      },
+  { title:"86 Eighty Six",            jp:"86―エイティシックス―",    genre:"MECHA · MILITARY"           },
+  { title:"Psycho-Pass",              jp:"サイコパス",               genre:"SCI-FI · THRILLER"          },
+  { title:"Parasyte",                 jp:"寄生獣",                   genre:"SCI-FI · HORROR"            },
+  { title:"Aldnoah Zero",             jp:"アルドノア・ゼロ",         genre:"MECHA · SCI-FI"             },
+  { title:"Dr Stone",                 jp:"Dr.STONE",                 genre:"SCI-FI · ADVENTURE"         },
+  { title:"Cyberpunk Edgerunners",    jp:"サイバーパンク エッジランナーズ", genre:"SCI-FI · ACTION"     },
+  // HORROR & DARK
+  { title:"Made in Abyss",            jp:"メイドインアビス",         genre:"ADVENTURE · DARK FANTASY"   },
+  { title:"The Promised Neverland",   jp:"約束のネバーランド",       genre:"THRILLER · DARK FANTASY"    },
+  { title:"Higurashi",                jp:"ひぐらしのなく頃に",       genre:"HORROR · MYSTERY"           },
+  { title:"Another",                  jp:"アナザー",                 genre:"HORROR · MYSTERY"           },
+  { title:"Hellsing Ultimate",        jp:"HELLSING ULTIMATE",        genre:"ACTION · HORROR"            },
+  { title:"Shiki",                    jp:"屍鬼",                     genre:"HORROR · SUPERNATURAL"      },
+  { title:"Dorohedoro",               jp:"ドロヘドロ",               genre:"DARK FANTASY · ACTION"      },
+  // COMEDY
+  { title:"Gintama",                  jp:"銀魂",                     genre:"COMEDY · ACTION"            },
+  { title:"Nichijou",                 jp:"日常",                     genre:"COMEDY · SLICE OF LIFE"     },
+  { title:"Saiki K",                  jp:"斉木楠雄のΨ難",            genre:"COMEDY · SUPERNATURAL"      },
+  { title:"Gekkan Shoujo Nozaki-kun", jp:"月刊少女野崎くん",         genre:"COMEDY · ROMANCE"           },
+  { title:"Daily Lives of High School Boys", jp:"男子高校生の日常", genre:"COMEDY · SLICE OF LIFE"     },
+  { title:"Grand Blue",               jp:"グランブルーファンタジー", genre:"COMEDY · SLICE OF LIFE"     },
+  // RECENT HITS
+  { title:"Frieren Beyond Journey End", jp:"葬送のフリーレン",       genre:"FANTASY · DRAMA"            },
+  { title:"Oshi no Ko",               jp:"推しの子",                 genre:"DRAMA · MYSTERY"            },
+  { title:"Dungeon Meshi",            jp:"ダンジョン飯",             genre:"FANTASY · COMEDY"           },
+  { title:"Solo Leveling",            jp:"俺だけレベルアップな件",   genre:"ACTION · FANTASY"           },
+  { title:"Dandadan",                 jp:"ダンダダン",               genre:"ACTION · SUPERNATURAL"      },
+  { title:"Bocchi the Rock",          jp:"ぼっち・ざ・ろっく！",     genre:"COMEDY · MUSIC"             },
+  { title:"Lycoris Recoil",           jp:"リコリス・リコイル",       genre:"ACTION · SLICE OF LIFE"     },
+  { title:"Ranking of Kings",         jp:"王様ランキング",           genre:"FANTASY · DRAMA"            },
+  // ADVENTURE & SHOUNEN
+  { title:"Fairy Tail",               jp:"フェアリーテイル",         genre:"ACTION · FANTASY"           },
+  { title:"Black Butler",             jp:"黒執事",                   genre:"MYSTERY · SUPERNATURAL"     },
+  { title:"Soul Eater",               jp:"ソウルイーター",           genre:"ACTION · FANTASY"           },
+  { title:"Magi",                     jp:"マギ",                     genre:"ADVENTURE · FANTASY"        },
+  { title:"The Seven Deadly Sins",    jp:"七つの大罪",               genre:"ACTION · FANTASY"           },
+  { title:"Noragami",                 jp:"ノラガミ",                 genre:"ACTION · SUPERNATURAL"      },
+  { title:"Fire Force",               jp:"炎炎ノ消防隊",             genre:"ACTION · SUPERNATURAL"      },
+  { title:"D Gray-man",               jp:"D.Gray-man",               genre:"ACTION · SUPERNATURAL"      },
+  { title:"Black Bullet",             jp:"ブラック・ブレット",       genre:"ACTION · SCI-FI"            },
+  { title:"Akame ga Kill",            jp:"アカメが斬る！",           genre:"ACTION · DARK FANTASY"      },
+  { title:"Sword Art Online Alicization", jp:"ソードアート・オンライン アリシゼーション", genre:"ACTION · ISEKAI"   },
+  { title:"Mirai Nikki",              jp:"未来日記",                 genre:"THRILLER · ROMANCE"         },
+  { title:"Akira",                    jp:"AKIRA",                    genre:"SCI-FI · CYBERPUNK"         },
+  { title:"Sword Art Online Progressive", jp:"ソードアート・オンライン プログレッシブ", genre:"ACTION · ISEKAI" },
+  { title:"Naruto Shippuden",         jp:"ナルト 疾風伝",            genre:"ACTION · ADVENTURE"         },
+  { title:"Bleach Thousand-Year Blood War", jp:"ブリーチ 千年血戦篇", genre:"ACTION · SUPERNATURAL"    },
+  { title:"Black Clover Movie",       jp:"ブラッククローバー 魔法帝の剣", genre:"ACTION · FANTASY"       },
+];
+
+// ── IMAGE + TRAILER CACHE ────────────────────────────────────────
+const imgCache     = {};
+const trailerCache = {}; // title -> youtube_id or null
+const FALLBACK = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600"><rect fill="%23111"/><text x="50%25" y="50%25" fill="%23444" font-size="48" text-anchor="middle" dominant-baseline="middle">?</text></svg>';
+
+let YT_API_KEY = localStorage.getItem('yt_api_key') || '';
+
+// ── FETCH IMAGE (Jikan) ──────────────────────────────────────────
+async function fetchAnimeData(anime) {
+  if (imgCache[anime.title]) return;
+  try {
+    const res   = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(anime.title)}&limit=1`);
+    const data  = await res.json();
+    const entry = data?.data?.[0];
+    imgCache[anime.title] = entry?.images?.jpg?.large_image_url || FALLBACK;
+  } catch {
+    imgCache[anime.title] = FALLBACK;
+  }
+}
+
+async function fetchImage(anime) {
+  await fetchAnimeData(anime);
+  return imgCache[anime.title];
+}
+
+async function prefetchImages(list) {
+  for (const anime of list) {
+    if (!imgCache[anime.title]) {
+      await fetchAnimeData(anime);
+      await new Promise(r => setTimeout(r, 350));
+    }
+  }
+}
+
+// ── FETCH TRAILER (YouTube Data API v3) ─────────────────────────
+async function fetchYouTubeTrailer(anime) {
+  if (anime.title in trailerCache) return trailerCache[anime.title];
+  if (!YT_API_KEY) { trailerCache[anime.title] = null; return null; }
+  try {
+    const q   = encodeURIComponent(`${anime.title} anime official trailer`);
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&maxResults=1&key=${YT_API_KEY}`;
+    const res = await fetch(url);
+    if (res.status === 403 || res.status === 400) {
+      const err = await res.json();
+      console.warn('YouTube API error:', err?.error?.message);
+      trailerCache[anime.title] = null;
+      return null;
+    }
+    const data = await res.json();
+    const id   = data?.items?.[0]?.id?.videoId || null;
+    trailerCache[anime.title] = id;
+    return id;
+  } catch {
+    trailerCache[anime.title] = null;
+    return null;
+  }
+}
+
+// ── VOLUME ────────────────────────────────────────────────────────
+let trailerVolume = parseInt(localStorage.getItem('trailer_volume') ?? '80');
+
+function initVolumeUI() {
+  const slider = document.getElementById('vol-slider');
+  const valEl  = document.getElementById('vol-value');
+  if (!slider) return;
+  slider.value = trailerVolume;
+  valEl.textContent = trailerVolume;
+  updateSliderTrack(slider, trailerVolume);
+  updateVolIcon(trailerVolume);
+}
+
+function onVolumeSlide(val) {
+  val = parseInt(val);
+  document.getElementById('vol-value').textContent = val;
+  updateSliderTrack(document.getElementById('vol-slider'), val);
+  updateVolIcon(val);
+  // apply live to any open iframes
+  applyVolumeToIframes(val);
+}
+
+function saveVolume(val) {
+  trailerVolume = parseInt(val);
+  localStorage.setItem('trailer_volume', trailerVolume);
+}
+
+function updateSliderTrack(slider, val) {
+  slider.style.setProperty('--pct', `${val}%`);
+}
+
+function updateVolIcon(val) {
+  const icon = document.getElementById('vol-icon');
+  if (!icon) return;
+  icon.textContent = val == 0 ? '🔇' : val < 40 ? '🔉' : '🔊';
+}
+
+function applyVolumeToIframes(vol) {
+  document.querySelectorAll('.trailer-wrap iframe').forEach(iframe => {
+    try {
+      iframe.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: 'setVolume', args: [vol] }), '*'
+      );
+    } catch(_) {}
+  });
+}
+
+function setIframeVolume(iframe, vol) {
+  // wait for iframe to be ready then send volume command
+  iframe.addEventListener('load', () => {
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'setVolume', args: [vol] }), '*'
+        );
+        if (vol === 0) {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*'
+          );
+        } else {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*'
+          );
+        }
+      } catch(_) {}
+    }, 1000);
+  });
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────
+// ── ADMIN GATE (SHA-256 via Web Crypto) ──────────────────────────
+let adminUnlocked = false;
+const ADMIN_HASH = 'ed085f73f89f1d600c548c9d3f821acdf2d8e36d7e7499e6f7718342d4c2aae1';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkAdminPw() {
+  const val = document.getElementById('admin-pw-input').value;
+  const err = document.getElementById('admin-pw-err');
+  const hash = await sha256(val);
+  if (hash === ADMIN_HASH) {
+    adminUnlocked = true;
+    document.getElementById('admin-pw-input').value = '';
+    document.getElementById('admin-gate-locked').style.display   = 'none';
+    document.getElementById('admin-gate-unlocked').style.display = 'flex';
+    document.getElementById('settings-key-input').value = YT_API_KEY || '';
+    updateKeyIndicator();
+    err.classList.remove('show');
+  } else {
+    err.classList.add('show');
+    document.getElementById('admin-pw-input').value = '';
+  }
+}
+
+function lockAdminSettings() {
+  adminUnlocked = false;
+  document.getElementById('admin-gate-locked').style.display   = '';
+  document.getElementById('admin-gate-unlocked').style.display = 'none';
+  document.getElementById('admin-pw-input').value = '';
+}
+
+function openSettings() {
+  document.getElementById('settings-page').classList.add('open');
+  lockAdminSettings();
+  // sync pool size slider
+  const slider = document.getElementById('pool-size-slider');
+  const label  = document.getElementById('pool-size-val');
+  if (slider) { slider.value = poolSize; label.textContent = poolSize; }
+  updateKeyIndicator();
+}
+function closeSettings() { document.getElementById('settings-page').classList.remove('open'); }
+document.addEventListener('click', e => { if (e.target.id === 'settings-page') closeSettings(); });
+
+function toggleKeyVis() {
+  const input = document.getElementById('settings-key-input');
+  const btn   = document.querySelector('.toggle-vis');
+  if (input.type === 'password') { input.type = 'text';     btn.textContent = '🙈 ซ่อน'; }
+  else                           { input.type = 'password'; btn.textContent = '👁 แสดง'; }
+}
+
+function updateKeyIndicator() {
+  const dot  = document.getElementById('key-dot');
+  const text = document.getElementById('key-indicator-text');
+  const btn  = document.getElementById('settings-btn');
+  if (YT_API_KEY) {
+    dot.classList.add('active');
+    text.textContent = '✓ ตั้งค่า API Key แล้ว';
+    text.style.color = '#4cff91'; text.style.opacity = '1';
+    btn.style.borderColor = 'rgba(76,255,145,.3)';
+  } else {
+    dot.classList.remove('active');
+    text.textContent = 'ยังไม่ได้ตั้งค่า API Key';
+    text.style.color = ''; text.style.opacity = '.4';
+    btn.style.borderColor = '';
+  }
+}
+
+let GOOGLE_CLIENT_ID = localStorage.getItem('google_client_id') || '';
+
+function saveGoogleClientId(val) {
+  GOOGLE_CLIENT_ID = val.trim();
+  localStorage.setItem('google_client_id', GOOGLE_CLIENT_ID);
+}
+
+function saveApiKey() {
+  const val    = document.getElementById('settings-key-input').value.trim();
+  const status = document.getElementById('settings-status');
+
+  if (val) {
+    YT_API_KEY = val;
+    localStorage.setItem('yt_api_key', val);
+    Object.keys(trailerCache).forEach(k => delete trailerCache[k]);
+  }
+
+  status.textContent = '✓ บันทึกแล้ว';
+  status.className = 'settings-status ok';
+  updateKeyIndicator();
+  setTimeout(() => { status.className = 'settings-status'; closeSettings(); lockAdminSettings(); }, 1200);
+}
+
+function initApiKeyUI() {
+  updateKeyIndicator();
+  initVolumeUI();
+  const input = document.getElementById('settings-key-input');
+  if (input) {
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') saveApiKey(); });
+  }
+}
+
+// ── HISTORY (localStorage) ────────────────────────────────────────
+let winHistory   = JSON.parse(localStorage.getItem('ab_history_shared') || '{}');
+let historyMeta  = JSON.parse(localStorage.getItem('ab_meta_shared')    || '{"totalGames":0,"totalRounds":0}');
+
+function recordWin(anime) {
+  if (!winHistory[anime.title]) winHistory[anime.title] = { wins:0, championships:0, lastWon:null, genre:anime.genre, jp:anime.jp };
+  winHistory[anime.title].wins++;
+  winHistory[anime.title].lastWon = Date.now();
+  saveHistory();
+}
+function recordChampion(anime) {
+  if (!winHistory[anime.title]) winHistory[anime.title] = { wins:0, championships:0, lastWon:null, genre:anime.genre, jp:anime.jp };
+  winHistory[anime.title].championships = (winHistory[anime.title].championships||0) + 1;
+  winHistory[anime.title].lastWon = Date.now();
+  historyMeta.totalGames++;
+  historyMeta.totalRounds += round - 1;
+  saveHistory();
+}
+function saveHistory() {
+  localStorage.setItem('ab_history_shared', JSON.stringify(winHistory));
+  localStorage.setItem('ab_meta_shared',    JSON.stringify(historyMeta));
+}
+function clearHistory() {
+  if (!confirm('ล้างประวัติทั้งหมด?')) return;
+  winHistory = {}; historyMeta = { totalGames:0, totalRounds:0 };
+  saveHistory(); renderDashboard();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────
+let currentTab = 'wins';
+
+function openDashboard() {
+  document.getElementById('dashboard-page').classList.add('open');
+  renderDashboard();
+
+  // find anime in history whose image is missing or was a failed fetch (FALLBACK)
+  const titlesNeeded = Object.keys(winHistory).filter(t => {
+    const cached = imgCache[t];
+    return !cached || cached === FALLBACK;
+  });
+  if (titlesNeeded.length === 0) return;
+
+  const animeNeeded = ANIME.filter(a => titlesNeeded.includes(a.title));
+
+  // clear bad cache so fetchAnimeData will actually retry
+  animeNeeded.forEach(a => { delete imgCache[a.title]; });
+
+  let done = 0;
+  animeNeeded.forEach(async (anime) => {
+    await fetchImage(anime);
+    done++;
+    // re-render each time a new image arrives so they pop in gradually
+    renderDashboard();
+  });
+}
+function closeDashboard() { document.getElementById('dashboard-page').classList.remove('open'); }
+document.addEventListener('click', e => { if (e.target.id === 'dashboard-page') closeDashboard(); });
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.dash-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  renderDashboard();
+}
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const m = Math.floor((Date.now()-ts)/60000);
+  const h = Math.floor(m/60), d = Math.floor(h/24);
+  if (m < 1) return 'เมื่อกี้';
+  if (m < 60) return `${m} นาทีที่แล้ว`;
+  if (h < 24) return `${h} ชั่วโมงที่แล้ว`;
+  return `${d} วันที่แล้ว`;
+}
+
+function renderDashboard() {
+  const entries = Object.entries(winHistory);
+  const topEntry = [...entries].sort((a,b) => b[1].wins - a[1].wins)[0];
+  document.getElementById('stat-total-games').textContent    = historyMeta.totalGames;
+  document.getElementById('stat-total-rounds').textContent   = historyMeta.totalRounds;
+  document.getElementById('stat-unique-winners').textContent = entries.length;
+  document.getElementById('stat-top-anime').textContent      = topEntry ? topEntry[0].split(' ')[0] : '—';
+
+  const content = document.getElementById('dash-content');
+  if (entries.length === 0) {
+    content.innerHTML = `<div class="dash-empty"><div class="dash-empty-icon">🎌</div><p>ยังไม่มีประวัติการชนะ<br>เริ่มเล่นเพื่อบันทึกข้อมูล!</p></div>`;
+    return;
+  }
+  let sorted;
+  if (currentTab === 'wins') {
+    sorted = [...entries].sort((a,b) => b[1].wins - a[1].wins);
+  } else if (currentTab === 'recent') {
+    sorted = [...entries].filter(([,v]) => v.lastWon).sort((a,b) => b[1].lastWon - a[1].lastWon);
+  } else {
+    sorted = [...entries].filter(([,v]) => (v.championships||0) > 0).sort((a,b) => (b[1].championships||0) - (a[1].championships||0));
+    if (!sorted.length) { content.innerHTML = `<div class="dash-empty"><div class="dash-empty-icon">👑</div><p>ยังไม่มีแชมป์<br>เล่นจนจบเกมเพื่อสร้างแชมป์!</p></div>`; return; }
+  }
+  const maxWins = sorted[0]?.[1].wins || 1;
+  content.innerHTML = `<div class="dash-list">${sorted.map(([title, data], i) => {
+    const rawImg = imgCache[title];
+    // never embed FALLBACK SVG inline — let onerror handle missing images
+    const img = (rawImg && rawImg !== FALLBACK) ? rawImg : '';
+    const r   = i + 1;
+    const rSym = r===1?'🥇':r===2?'🥈':r===3?'🥉':r;
+    const rCls = r===1?'r1':r===2?'r2':r===3?'r3':'other';
+    const pct  = Math.round((data.wins / maxWins)*100);
+    const champ = (data.championships||0) > 0 ? `<span class="dash-champion-badge">👑 ×${data.championships}</span>` : '';
+    const stat = currentTab === 'champion'
+      ? `<span class="dash-wins-num">👑 ×${data.championships}</span>`
+      : `<div class="dash-wins-bar-wrap"><div class="dash-wins-bar"><div class="dash-wins-bar-fill" style="width:${pct}%"></div></div><span class="dash-wins-num">${data.wins} W</span></div>`;
+    return `<div class="dash-row" style="animation-delay:${i*.04}s">
+      <div class="dash-rank ${rCls}">${rSym}</div>
+      <img class="dash-img" src="${img}" alt="${title}" onerror="this.onerror=null;this.src='';this.style.background='#222'"/>
+      <div class="dash-info">
+        <div class="dash-anime-title">${title}</div>
+        <div class="dash-anime-meta">${data.genre||''} ${champ}</div>
+        <div class="dash-last-won">${timeAgo(data.lastWon)}</div>
+      </div>${stat}</div>`;
+  }).join('')}</div>`;
+}
+
+// ── STATE ────────────────────────────────────────────────────────
+let rejected = new Set();   // anime that lost — never shown again
+let pool     = [];
+let leftAnime, rightAnime;
+let wins     = {};
+let round    = 1;
+let locked   = false;
+
+// ── POOL SIZE ────────────────────────────────────────────────────
+let poolSize    = parseInt(localStorage.getItem('ab_pool_size') || '30');
+let activePool  = [];   // the randomly-picked subset for this game
+
+function savePoolSize(val) {
+  poolSize = parseInt(val);
+  localStorage.setItem('ab_pool_size', poolSize);
+}
+
+function initPoolSizeUI() {
+  const slider = document.getElementById('pool-size-slider');
+  const label  = document.getElementById('pool-size-val');
+  if (!slider) return;
+  slider.max   = ANIME.length;
+  slider.value = poolSize;
+  label.textContent = poolSize;
+  slider.addEventListener('change', e => savePoolSize(e.target.value));
+}
+
+// ── HELPERS ─────────────────────────────────────────────────────
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ── TRAILER ─────────────────────────────────────────────────────
+const hoverTimers = {};
+
+function clearTrailer(side) {
+  clearTimeout(hoverTimers[side]);
+  const wrap    = document.getElementById(`${side}-trailer`);
+  const badge   = document.getElementById(`${side}-trailer-badge`);
+  const noMsg   = document.getElementById(`${side}-no-trailer`);
+  const spinner = document.getElementById(`${side}-trailer-loading`);
+  wrap.innerHTML = '';
+  wrap.classList.remove('ready');
+  badge.classList.remove('visible');
+  noMsg.classList.remove('visible');
+  spinner.classList.remove('fetching');
+}
+
+function loadTrailer(side, anime) {
+  const wrap    = document.getElementById(`${side}-trailer`);
+  const badge   = document.getElementById(`${side}-trailer-badge`);
+  const noMsg   = document.getElementById(`${side}-no-trailer`);
+  const spinner = document.getElementById(`${side}-trailer-loading`);
+
+  if (wrap.dataset.anime === anime.title && wrap.classList.contains('ready')) return;
+
+  wrap.innerHTML = '';
+  wrap.classList.remove('ready');
+  badge.classList.remove('visible');
+  noMsg.classList.remove('visible');
+
+  if (!YT_API_KEY) {
+    noMsg.textContent = 'ใส่ YouTube API Key ก่อน';
+    noMsg.classList.add('visible');
+    return;
+  }
+
+  const cached = trailerCache[anime.title];
+
+  if (cached === undefined) {
+    spinner.classList.add('fetching');
+    fetchYouTubeTrailer(anime).then(id => {
+      spinner.classList.remove('fetching');
+      loadTrailer(side, anime);
+    });
+    return;
+  }
+
+  spinner.classList.remove('fetching');
+
+  if (!cached) {
+    noMsg.textContent = 'NO TRAILER';
+    noMsg.classList.add('visible');
+    return;
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.src = `https://www.youtube.com/embed/${cached}?autoplay=1&mute=0&controls=1&loop=1&playlist=${cached}&modestbranding=1&rel=0&enablejsapi=1`;
+  iframe.allow = 'autoplay; encrypted-media';
+  iframe.setAttribute('allowfullscreen', '');
+  setIframeVolume(iframe, trailerVolume);
+  wrap.appendChild(iframe);
+  wrap.dataset.anime = anime.title;
+  wrap.classList.add('ready');
+  badge.classList.add('visible');
+}
+
+function setupHover(side) {
+  const panel = document.getElementById(side);
+  panel.addEventListener('mouseenter', () => {
+    const anime = side === 'left' ? leftAnime : rightAnime;
+    // small delay so quick passes don't load
+    hoverTimers[side] = setTimeout(() => loadTrailer(side, anime), 600);
+  });
+  panel.addEventListener('mouseleave', () => {
+    clearTrailer(side);
+  });
+}
+
+function buildPool() {
+  // Pick a random subset of size=poolSize from ANIME, then filter rejected
+  return shuffle(activePool.filter(a => !rejected.has(a)));
+}
+
+function nextAnime(exclude1, exclude2) {
+  const available = activePool.filter(a => !rejected.has(a) && a !== exclude1 && a !== exclude2);
+  if (available.length === 0) return null;
+  return shuffle(available)[0];
+}
+
+// ── RENDER ───────────────────────────────────────────────────────
+async function renderPanel(side, anime, animClass) {
+  const bg    = document.getElementById(`${side}-bg`);
+  const title = document.getElementById(`${side}-title`);
+  const jp    = document.getElementById(`${side}-title-jp`);
+  const genre = document.getElementById(`${side}-genre`);
+  const panel = document.getElementById(side);
+
+  // show text immediately
+  title.textContent = anime.title;
+  jp.textContent    = anime.jp;
+  genre.textContent = anime.genre;
+  bg.style.backgroundImage = `url('${imgCache[anime.title] || FALLBACK}')`;
+
+  if (animClass) {
+    panel.classList.remove('anim-left', 'anim-right');
+    void panel.offsetWidth;
+    panel.classList.add(animClass);
+  }
+
+  // load image (from cache or API) then update bg
+  const url = await fetchImage(anime);
+  bg.style.backgroundImage = `url('${url}')`;
+}
+
+function updateUI() {
+  document.getElementById('round-counter').textContent = `ROUND ${round}`;
+  const remaining = activePool.length - rejected.size;
+  document.getElementById('remaining-counter').textContent = `เหลือ ${remaining} เรื่อง`;
+}
+
+function updateLastPick(anime) {
+  const img  = document.getElementById('last-pick-img');
+  const name = document.getElementById('last-pick-name');
+  const vs   = document.getElementById('vs-text');
+
+  vs.style.display = 'none';
+
+  img.classList.remove('visible');
+  name.classList.remove('visible');
+  void img.offsetWidth;
+
+  img.src = imgCache[anime.title] || FALLBACK;
+  img.classList.add('visible');
+  name.textContent = anime.title;
+  name.classList.add('visible');
+}
+
+// ── CHOOSE ───────────────────────────────────────────────────────
+function choose(side) {
+  if (locked) return;
+  locked = true;
+
+  const chosen        = side === 'left' ? leftAnime  : rightAnime;
+  const rejected_anime = side === 'left' ? rightAnime : leftAnime;
+  const rejectSide    = side === 'left' ? 'right' : 'left';
+
+  // Mark loser as rejected — won't appear again
+  rejected.add(rejected_anime);
+
+  recordWin(chosen);
+  wins[side] = (wins[side] || 0) + 1;
+  round++;
+
+  updateLastPick(chosen);
+
+  // flash winner
+  document.getElementById(side).classList.add('flash-win');
+  setTimeout(() => document.getElementById(side).classList.remove('flash-win'), 700);
+
+  // replace both sides with new anime
+  const newLeft  = nextAnime(chosen, rejected_anime);
+  const newRight = newLeft ? nextAnime(chosen, newLeft) : null;
+
+  // Check if pool is exhausted (can't fill even one side)
+  if (newLeft === null) {
+    showWinner(chosen);
+    locked = false;
+    return;
+  }
+
+  clearTrailer('left');
+  clearTrailer('right');
+
+  leftAnime  = newLeft;
+  rightAnime = newRight || nextAnime(newLeft, null) || newLeft;
+  renderPanel('left',  leftAnime,  'anim-left');
+  renderPanel('right', rightAnime, 'anim-right');
+
+  updateUI();
+  showToast(`✦ คุณเลือก ${chosen.title}`);
+
+  setTimeout(() => { locked = false; }, 520);
+}
+
+// ── WINNER ───────────────────────────────────────────────────────
+function showWinner(anime) {
+  recordWin(anime);
+  recordChampion(anime);
+  document.getElementById('winner-img').src           = imgCache[anime.title] || FALLBACK;
+  document.getElementById('winner-title').textContent = anime.title;
+  document.getElementById('winner-jp').textContent    = anime.jp;
+  document.getElementById('winner-genre').textContent = anime.genre;
+  document.getElementById('winner-round').textContent = `ผ่านมาทั้งหมด ${round - 1} รอบ`;
+  document.getElementById('winner-screen').classList.add('show');
+}
+
+function playAgain() {
+  rejected.clear();
+  round = 1;
+  wins  = {};
+  // re-pick a fresh random subset
+  activePool = shuffle([...ANIME]).slice(0, Math.min(poolSize, ANIME.length));
+  document.getElementById('winner-screen').classList.remove('show');
+
+  clearTrailer('left');
+  clearTrailer('right');
+
+  const vs = document.getElementById('vs-text');
+  vs.style.display = '';
+  document.getElementById('last-pick-img').classList.remove('visible');
+  document.getElementById('last-pick-name').classList.remove('visible');
+
+  leftAnime  = nextAnime(null, null);
+  rightAnime = nextAnime(leftAnime, null);
+  renderPanel('left',  leftAnime,  'anim-left');
+  renderPanel('right', rightAnime, 'anim-right');
+  updateUI();
+}
+
+// ── TOAST ────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+async function init() {
+  // build active pool from random subset
+  activePool = shuffle([...ANIME]).slice(0, Math.min(poolSize, ANIME.length));
+
+  initApiKeyUI();
+  initPoolSizeUI();
+
+  leftAnime  = nextAnime(null, null);
+  rightAnime = nextAnime(leftAnime, null);
+
+  document.getElementById('loading').querySelector('p').textContent = 'FETCHING IMAGES...';
+  await Promise.all([fetchImage(leftAnime), fetchImage(rightAnime)]);
+
+  renderPanel('left',  leftAnime);
+  renderPanel('right', rightAnime);
+  updateUI();
+
+  const loading = document.getElementById('loading');
+  loading.classList.add('hide');
+  setTimeout(() => loading.remove(), 600);
+
+  prefetchImages(activePool.filter(a => a !== leftAnime && a !== rightAnime));
+}
+
+let gameStarted = false;
+
+// Click on panel background also triggers choose
+document.getElementById('left').addEventListener('click',  (e) => { if (!e.target.classList.contains('choose-btn')) choose('left');  });
+document.getElementById('right').addEventListener('click', (e) => { if (!e.target.classList.contains('choose-btn')) choose('right'); });
+
+// Trailer hover
+setupHover('left');
+setupHover('right');
+
+// Keyboard support
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeSettings(); closeDashboard(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') choose('left');
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') choose('right');
+});
+
+window.addEventListener('load', () => { if (!gameStarted) { gameStarted = true; init(); } });
+</script>
+
+<script src="js/anime-data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
