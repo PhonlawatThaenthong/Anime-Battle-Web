@@ -47,6 +47,53 @@ function updateLastPick(anime) {
 }
 
 // ── CHOOSE ───────────────────────────────────────────────────────
+// ── GAME LOG ─────────────────────────────────────────────────────
+const gameLog = []; // { time, title, type: 'win'|'lose' }
+let logFilter = 'all';
+
+function addLog(winner, loser) {
+  const now = new Date();
+  const time = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  gameLog.unshift({ time, title: winner.title, type: 'win' });
+  gameLog.unshift({ time, title: loser.title,  type: 'lose' });
+}
+
+function openGameLog() {
+  document.getElementById('log-page').classList.add('open');
+  renderLog();
+}
+function closeGameLog() { document.getElementById('log-page').classList.remove('open'); }
+document.addEventListener('click', e => { if (e.target.id === 'log-page') closeGameLog(); });
+
+function filterLog(type) {
+  logFilter = type;
+  document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`log-filter-${type}`).classList.add('active');
+  renderLog();
+}
+
+function clearGameLog() {
+  if (!confirm('ล้าง Log ทั้งหมดใช่ไหม?')) return;
+  gameLog.length = 0;
+  renderLog();
+}
+
+function renderLog() {
+  const body = document.getElementById('log-body');
+  if (!body) return;
+  const entries = logFilter === 'all' ? gameLog : gameLog.filter(e => e.type === logFilter);
+  if (entries.length === 0) {
+    body.innerHTML = '<div class="log-empty">ยังไม่มี Log</div>';
+    return;
+  }
+  body.innerHTML = entries.map(e => `
+    <div class="log-entry ${e.type}">
+      <span class="log-time">[${e.time}]</span>
+      <span class="log-badge ${e.type}">${e.type === 'win' ? '🏆 Win' : '💀 Lose'}</span>
+      <span class="log-title">${e.title}</span>
+    </div>`).join('');
+}
+
 function choose(side) {
   if (locked) return;
   locked = true;
@@ -58,6 +105,7 @@ function choose(side) {
   // Mark loser as rejected — won't appear again
   rejected.add(rejected_anime);
 
+  addLog(chosen, rejected_anime);
   recordWin(chosen);
   wins[side] = (wins[side] || 0) + 1;
   round++;
